@@ -24,9 +24,15 @@ public class RKPointPin: UIView {
   /// Set to false if you want to use your own hide/show functions.
   public var autoHideOnFocused = true
 
-  /// Point at which the pin disappears, when the target
-  /// is close enough to the centre of the screen
-  public var cutoffPercentage: CGFloat = 0.0
+  /// Percentage (0-1) of the screen which is considered `inFocus`
+  public var focusPercentage: CGFloat = 0.0 {
+    didSet {
+      if !(0.0...1.0).contains(self.focusPercentage) {
+        print("focusPercentage must be between 0 and 1")
+        self.focusPercentage = max(min(self.focusPercentage, 1), 0)
+      }
+    }
+  }
 
   /// Entity that we will be pointing at 🎯
   public var targetEntity: Entity? {
@@ -36,26 +42,34 @@ public class RKPointPin: UIView {
     }
   }
 
+  private var setARView: ARView?
+
   /// 􀘸 ARView which contains the `targetEntity`
   public var arView: ARView? {
-    didSet {
-      self.resetCancellable()
-    }
+    self.superview as? ARView
   }
 
   /// 📍🎯 A new RKPointPin, which points to an entity of your choosing inside your ARView Scene
   /// - Parameters:
   ///   - size: Width and height of your pin, default 32x64
-  ///   - pinTexture: Optional pin texture, if omitted one will be generated from a UIBezierPath
-  ///   - color: Color to be applied to the pin, only considered if pinTexture is not supplied
+  ///   - pinTexture: Optional pin texture. If omitted, one will be generated from a UIBezierPath
+  ///   - color: Color to be applied to the pin. If omitted, `.systemBlue` will be applied to default texture.
   required public init(
     size: CGSize = CGSize(width: 32, height: 64),
     pinTexture: UIImage? = nil,
-    color: UIColor = .systemBlue
+    color: UIColor? = nil
   ) {
     pinBody = UIImageView(frame: CGRect(origin: .init(x: -size.width/2, y: -size.height), size: size))
     super.init(frame: .zero)
-    let pinTx = pinTexture ?? UIImage.pinImg(color: color)
+    var pinTx: UIImage?
+    if pinTexture != nil {
+      pinTx = pinTexture
+      if let color = color {
+        pinTx = pinTexture?.tinted(color: color)
+      }
+    } else {
+      pinTx = UIImage.pinImg(color: color ?? .systemBlue)
+    }
     pinBody.image = pinTx
     pinBody.contentMode = .scaleAspectFill
 
@@ -67,6 +81,10 @@ public class RKPointPin: UIView {
   }
   public func showPin() {
     self.isHidden = false
+  }
+
+  public override func didMoveToSuperview() {
+    self.resetCancellable()
   }
 
   private var viewWidth: CGFloat? {
@@ -93,10 +111,10 @@ public class RKPointPin: UIView {
 
   private func resetCancellable() {
     self.cancellable?.cancel()
-    guard self.arView != nil, self.targetEntity != nil else {
+    guard let arView = self.arView, self.targetEntity != nil else {
       return
     }
-    self.cancellable = arView?.scene.subscribe(
+    self.cancellable = arView.scene.subscribe(
       to: SceneEvents.Update.self, { _ in
       self.updatePos()
     })
@@ -104,14 +122,14 @@ public class RKPointPin: UIView {
 
   private var pinBody: UIImageView
   private var focusBounds: CGRect? {
-    guard let safeView = self.safeFrame, self.cutoffPercentage != 0 else {
+    guard let safeView = self.safeFrame, self.focusPercentage != 0 else {
       return nil
     }
     return CGRect(
-      x: safeView.origin.x + safeView.width * cutoffPercentage / 2,
-      y: safeView.origin.y + safeView.height * cutoffPercentage / 2,
-      width: safeView.width - safeView.width * cutoffPercentage,
-      height: safeView.height - safeView.height * cutoffPercentage
+      x: safeView.origin.x + safeView.width * (1 - focusPercentage) / 2,
+      y: safeView.origin.y + safeView.height * (1 - focusPercentage) / 2,
+      width: safeView.width - safeView.width * (1 - focusPercentage),
+      height: safeView.height - safeView.height * (1 - focusPercentage)
     )
   }
 
@@ -172,7 +190,7 @@ public class RKPointPin: UIView {
     if zDots > 0 {
       // looking in the opposite direction projects the point to the center of
       // the screen. This is a temporary fix by flipping the x and y,
-      // there is probably a more elegant fix for this to be investigated later
+      // there is probably a better fix for this to be investigated later
       self.setPos(to: CGPoint(x: -projPoint.x, y: -projPoint.y))
     } else {
       self.setPos(to: projPoint)
@@ -188,16 +206,8 @@ public class RKPointPin: UIView {
     }
 
     let endPos = CGPoint(
-      x: max(min(
-        point.x,
-        safeFrame.origin.x + safeFrame.width),
-        safeFrame.origin.x
-      ),
-      y: max(min(
-        point.y,
-        safeFrame.origin.y + safeFrame.height),
-        safeFrame.origin.y
-      )
+      x: max(min(point.x, safeFrame.origin.x + safeFrame.width), safeFrame.origin.x),
+      y: max(min(point.y, safeFrame.origin.y + safeFrame.height), safeFrame.origin.y)
     )
 
     self.transform = CGAffineTransform(rotationAngle: atan2(

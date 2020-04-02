@@ -18,6 +18,7 @@ class ViewController: UIViewController {
 
     arView.frame = self.view.bounds
     self.arView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    self.view.addSubview(self.arView)
 
     let rootAnchor = AnchorEntity(world: [0, 0, -1])
 
@@ -31,12 +32,9 @@ class ViewController: UIViewController {
     // Add the box anchor to the scene
     self.arView.scene.addAnchor(rootAnchor)
     let rkPin = RKPointPin()
-    rkPin.arView = self.arView
-    rkPin.targetEntity = boxEntity
-    rkPin.cutoffPercentage = 0.5
     self.arView.addSubview(rkPin)
-    self.rkPin = rkPin
-    self.view.addSubview(self.arView)
 
+    rkPin.focusPercentage = 0.35
+    rkPin.targetEntity = boxEntity
   }
 }
