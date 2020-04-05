@@ -111,7 +111,14 @@ public class RKPointPin: UIView {
 
   private func resetCancellable() {
     self.cancellable?.cancel()
-    guard let arView = self.arView, self.targetEntity != nil else {
+    if self.targetEntity == nil {
+      return
+    }
+    if !Thread.isMainThread {
+      print("RKPointPin ERROR: targetEntity should set from main thread")
+      return
+    }
+    guard let arView = self.arView else {
       return
     }
     self.cancellable = arView.scene.subscribe(
@@ -168,7 +175,7 @@ public class RKPointPin: UIView {
 
   private func updatePos() {
     if !Thread.isMainThread {
-      print("RKPointPin: Should be on main thread")
+      print("RKPointPin ERROR: Should be on main thread")
       return
     }
     guard let arView = self.arView else {

@@ -2,6 +2,9 @@
 
 RKPointPin is a UIView which sticks to an `ARView` and points at a chosen entity within the scene, with options to hide the pin when near the center of the screen, or perform any custom actions.
 
+[![Swift Package Manager](https://img.shields.io/badge/Swift_Package_Manager-v1.0.0-orange.svg?style=flat)](https://github.com/apple/swift-package-manager)
+[![Swift 5.2](https://img.shields.io/badge/Swift-5.2-orange.svg?style=flat)](https://swift.org/)
+
 ![RKPointPin Example](media/pin_512.gif)
 
 ## Minimum Requirements
@@ -29,4 +32,4 @@ self.arView.addSubview(rkPin)
 rkPin.targetEntity = boxEntity
 ```
 
-By default the RKPointPin will be visible all the time, but if you want the pin to hide when in the center, set the `focusPercentage` to a value ranging from 0 to 1. If  `focusPercentage` is set to 1, then the pin will only appear when the `targetEntity` is outside of the view, as everything from the edges inwards is considered the focus area. 
+By default the RKPointPin will be visible all the time, but if you want the pin to hide when in the center, set the `focusPercentage` to a value ranging from 0 to 1. If  `focusPercentage` is set to 1, then the pin will only appear when the `targetEntity` is outside of the view, as everything from the edges inwards is considered the focus area.
