@@ -185,10 +185,15 @@ public class RKPointPin: UIView {
     guard let ent = self.targetEntity,
       ent.scene != nil,
       let projPoint = arView.project(ent.position(relativeTo: nil)) else {
-      if self.pinBody.isHidden {
-        // hide because we do not want to show it now
+      if !self.pinBody.isHidden {
+        // hide pin if it is showing
+        self.pinBody.isHidden = true
       }
       return
+    }
+    if self.pinBody.isHidden {
+      // show pin if it is hidden
+      self.pinBody.isHidden = false
     }
     let matrixZAxis = arView.cameraTransform.matrix.columns.2
     let zFacing: SIMD3<Float> = [matrixZAxis.x, matrixZAxis.y, matrixZAxis.z]
